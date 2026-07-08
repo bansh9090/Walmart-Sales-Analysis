@@ -1,30 +1,21 @@
-
 USE walmart;
-
-----------------------------------------------------
--- 🔰 BASIC LEVEL
-----------------------------------------------------
 
 -- Total records
 SELECT COUNT(*) AS Total_Records
 FROM walmart;
 
--- Sample data
+-- View sample data
 SELECT *
 FROM walmart
 LIMIT 10;
 
--- Distinct stores
+-- Unique stores
 SELECT DISTINCT Store
 FROM walmart;
 
--- Distinct departments
+-- Unique departments
 SELECT DISTINCT Dept
 FROM walmart;
-
-----------------------------------------------------
--- 📊 BASIC ANALYSIS
-----------------------------------------------------
 
 -- Total sales
 SELECT SUM(Weekly_Sales) AS Total_Sales
@@ -34,25 +25,21 @@ FROM walmart;
 SELECT AVG(Weekly_Sales) AS Avg_Sales
 FROM walmart;
 
--- Max sales
+-- Highest sales
 SELECT MAX(Weekly_Sales) AS Max_Sales
 FROM walmart;
 
--- Min sales
+-- Lowest sales
 SELECT MIN(Weekly_Sales) AS Min_Sales
 FROM walmart;
 
-----------------------------------------------------
--- 🏬 STORE LEVEL (INTERMEDIATE)
-----------------------------------------------------
-
--- Total sales per store
+-- Total sales by store
 SELECT Store,
        SUM(Weekly_Sales) AS Total_Sales
 FROM walmart
 GROUP BY Store;
 
--- Average sales per store
+-- Average sales by store
 SELECT Store,
        AVG(Weekly_Sales) AS Avg_Sales
 FROM walmart
@@ -74,24 +61,20 @@ GROUP BY Store
 ORDER BY Total_Sales ASC
 LIMIT 5;
 
--- Store transaction count
+-- Total records by store
 SELECT Store,
        COUNT(*) AS Total_Records
 FROM walmart
 GROUP BY Store;
 
-----------------------------------------------------
--- 🏷️ DEPARTMENT LEVEL
-----------------------------------------------------
-
--- Total sales per dept
+-- Total sales by department
 SELECT Dept,
        SUM(Weekly_Sales) AS Total_Sales
 FROM walmart
 GROUP BY Dept
 ORDER BY Total_Sales DESC;
 
--- Top department
+-- Best performing department
 SELECT Dept,
        SUM(Weekly_Sales) AS Total_Sales
 FROM walmart
@@ -99,16 +82,12 @@ GROUP BY Dept
 ORDER BY Total_Sales DESC
 LIMIT 1;
 
--- High performing departments
+-- Departments with average sales above 20000
 SELECT Dept,
        AVG(Weekly_Sales) AS Avg_Sales
 FROM walmart
 GROUP BY Dept
 HAVING AVG(Weekly_Sales) > 20000;
-
-----------------------------------------------------
--- 📅 TIME ANALYSIS
-----------------------------------------------------
 
 -- Monthly sales
 SELECT Month,
@@ -124,21 +103,14 @@ FROM walmart
 GROUP BY Year
 ORDER BY Year;
 
-----------------------------------------------------
--- 🎉 HOLIDAY ANALYSIS
-----------------------------------------------------
-
+-- Holiday vs non-holiday sales
 SELECT IsHoliday,
        SUM(Weekly_Sales) AS Total_Sales,
        AVG(Weekly_Sales) AS Avg_Sales
 FROM walmart
 GROUP BY IsHoliday;
 
-----------------------------------------------------
--- 📉 EXTREME VALUES
-----------------------------------------------------
-
--- Highest sale record
+-- Highest sales record
 SELECT *
 FROM walmart
 ORDER BY Weekly_Sales DESC
@@ -156,38 +128,30 @@ FROM walmart
 ORDER BY Weekly_Sales ASC
 LIMIT 10;
 
-----------------------------------------------------
--- 🚨 BUSINESS RULES (HAVING)
-----------------------------------------------------
-
--- Stores with sales > 10M
+-- Stores with total sales above 10 million
 SELECT Store,
        SUM(Weekly_Sales) AS Total_Sales
 FROM walmart
 GROUP BY Store
 HAVING SUM(Weekly_Sales) > 10000000;
 
--- Departments avg sales > 20K
+-- Departments with average sales above 20000
 SELECT Dept,
        AVG(Weekly_Sales) AS Avg_Sales
 FROM walmart
 GROUP BY Dept
 HAVING AVG(Weekly_Sales) > 20000;
 
-----------------------------------------------------
--- 🚀 ADVANCED LEVEL (INTERVIEW READY)
-----------------------------------------------------
-
--- Store ranking
-SELECT 
+-- Rank stores by total sales
+SELECT
     Store,
     SUM(Weekly_Sales) AS Total_Sales,
     RANK() OVER (ORDER BY SUM(Weekly_Sales) DESC) AS Sales_Rank
 FROM walmart
 GROUP BY Store;
 
--- Sales contribution %
-SELECT 
+-- Sales contribution by store
+SELECT
     Store,
     SUM(Weekly_Sales) AS Total_Sales,
     ROUND(
@@ -197,11 +161,11 @@ SELECT
 FROM walmart
 GROUP BY Store;
 
--- Performance category
-SELECT 
+-- Store performance category
+SELECT
     Store,
     SUM(Weekly_Sales) AS Total_Sales,
-    CASE 
+    CASE
         WHEN SUM(Weekly_Sales) > 10000000 THEN 'High'
         WHEN SUM(Weekly_Sales) BETWEEN 5000000 AND 10000000 THEN 'Medium'
         ELSE 'Low'
@@ -209,10 +173,10 @@ SELECT
 FROM walmart
 GROUP BY Store;
 
--- Best department per store
+-- Best department in each store
 SELECT *
 FROM (
-    SELECT 
+    SELECT
         Store,
         Dept,
         SUM(Weekly_Sales) AS Total_Sales,
@@ -222,8 +186,8 @@ FROM (
 ) t
 WHERE rnk = 1;
 
--- Year over year growth
-SELECT 
+-- Year-over-year sales growth
+SELECT
     Year,
     SUM(Weekly_Sales) AS Total_Sales,
     LAG(SUM(Weekly_Sales)) OVER (ORDER BY Year) AS Prev_Year,
@@ -235,8 +199,8 @@ SELECT
 FROM walmart
 GROUP BY Year;
 
--- Sales variation (risk analysis)
-SELECT 
+-- Sales variation by store
+SELECT
     Store,
     AVG(Weekly_Sales) AS Avg_Sales,
     MAX(Weekly_Sales) AS Max_Sales,
@@ -247,7 +211,7 @@ GROUP BY Store
 ORDER BY Variation DESC;
 
 -- Sales stability
-SELECT 
+SELECT
     Store,
     AVG(Weekly_Sales) AS Avg_Sales,
     STDDEV(Weekly_Sales) AS Sales_StdDev

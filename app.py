@@ -162,6 +162,7 @@ st.write("RMSE:", np.sqrt(mean_squared_error(y_test, lr_pred)))
 st.write("R2 Score:", r2_score(y_test, lr_pred))
 
 # Random Forest
+st.write("Starting Random Forest Training...")
 
 rf = RandomForestRegressor(n_estimators=100, random_state=42)
 rf.fit(X_train, y_train)

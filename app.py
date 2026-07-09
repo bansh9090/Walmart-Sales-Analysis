@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-# coding: utf-8
 
+import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,13 +8,15 @@ import seaborn as sns
 from scipy import stats
 from scipy.stats import ttest_1samp
 
-from sqlalchemy import create_engine
-
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+st.title("Walmart Sales Analysis & ML Prediction")
+
+# Load Dataset
 
 features = pd.read_csv("Dataset/Raw/features.csv")
 stores = pd.read_csv("Dataset/Raw/stores.csv")
@@ -24,43 +25,54 @@ train = pd.read_csv("Dataset/Raw/train.csv")
 df = train.merge(features, on=["Store", "Date", "IsHoliday"], how="left")
 df = df.merge(stores, on="Store", how="left")
 
+# Data Cleaning
+
 df.drop_duplicates(inplace=True)
 
 for col in ["MarkDown1", "MarkDown2", "MarkDown3", "MarkDown4", "MarkDown5"]:
     df[col] = df[col].fillna(0)
 
+# Feature Engineering
+
 df["Date"] = pd.to_datetime(df["Date"])
 df["Year"] = df["Date"].dt.year
 df["Month"] = df["Date"].dt.month_name()
 
-plt.figure(figsize=(10, 6))
-sns.histplot(df["Weekly_Sales"], bins=50, kde=True)
-plt.title("Distribution of Weekly Sales")
-plt.xlabel("Weekly Sales")
-plt.ylabel("Frequency")
-plt.show()
+# Exploratory Data Analysis (EDA)
 
-plt.figure(figsize=(12, 8))
-sns.heatmap(df.corr(numeric_only=True), annot=True, cmap="coolwarm")
-plt.title("Correlation Heatmap")
-plt.show()
+st.header("Exploratory Data Analysis")
 
-top_store_sales = (
+# Distribution of Weekly Sales
+
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.histplot(df["Weekly_Sales"], bins=50, kde=True, ax=ax)
+ax.set_title("Distribution of Weekly Sales")
+st.pyplot(fig)
+
+# Correlation Heatmap
+
+fig, ax = plt.subplots(figsize=(12, 8))
+sns.heatmap(df.corr(numeric_only=True), annot=True, ax=ax)
+ax.set_title("Correlation Heatmap")
+st.pyplot(fig)
+
+# Top 10 Stores by Sales
+
+top_sales = (
     df.groupby("Store")["Weekly_Sales"]
     .sum()
     .sort_values(ascending=False)
     .head(10)
 )
 
-plt.figure(figsize=(10, 6))
-sns.barplot(
-    x=top_store_sales.index.astype(str),
-    y=top_store_sales.values
-)
-plt.title("Top 10 Stores by Sales")
-plt.xlabel("Store")
-plt.ylabel("Total Sales")
-plt.show()
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.barplot(x=top_sales.index.astype(str), y=top_sales.values, ax=ax)
+ax.set_title("Top 10 Stores by Sales")
+ax.set_xlabel("Store")
+ax.set_ylabel("Total Sales")
+st.pyplot(fig)
+
+# Monthly Sales Trend
 
 month_order = [
     "January", "February", "March", "April",
@@ -68,134 +80,127 @@ month_order = [
     "September", "October", "November", "December"
 ]
 
-df["Month"] = pd.Categorical(
-    df["Month"],
-    categories=month_order,
-    ordered=True
-)
+df["Month"] = pd.Categorical(df["Month"], categories=month_order, ordered=True)
 
-monthly_sales = (
-    df.groupby("Month")["Weekly_Sales"]
-    .sum()
-)
+monthly_sales = df.groupby("Month", observed=False)["Weekly_Sales"].sum()
 
-plt.figure(figsize=(10, 6))
-plt.plot(monthly_sales.index, monthly_sales.values, marker="o")
-plt.title("Monthly Sales Trend")
-plt.xlabel("Month")
-plt.ylabel("Weekly Sales")
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(monthly_sales.index, monthly_sales.values, marker="o")
+ax.set_title("Monthly Sales Trend")
+ax.set_xlabel("Month")
+ax.set_ylabel("Sales")
 plt.xticks(rotation=45)
 plt.grid(True)
-plt.show()
+st.pyplot(fig)
+
+# Holiday vs Non-Holiday Sales
 
 holiday_sales = df.groupby("IsHoliday")["Weekly_Sales"].sum()
 
-plt.figure(figsize=(6, 5))
-plt.bar(["Non-Holiday", "Holiday"], holiday_sales.values)
-plt.title("Holiday vs Non-Holiday Sales")
-plt.ylabel("Total Sales")
-plt.show()
+fig, ax = plt.subplots(figsize=(6, 5))
+ax.bar(["Non-Holiday", "Holiday"], holiday_sales.values)
+ax.set_title("Holiday vs Non-Holiday Sales")
+ax.set_ylabel("Total Sales")
+st.pyplot(fig)
+
+# Statistical Analysis
+
+st.header("Statistical Analysis")
+
+# Confidence Interval
 
 mean_sales = df["Weekly_Sales"].mean()
 std_sales = df["Weekly_Sales"].std(ddof=1)
-sample_size = len(df)
+n = len(df)
 
-standard_error = std_sales / np.sqrt(sample_size)
-
-confidence_interval = stats.t.interval(
+ci = stats.t.interval(
     0.95,
-    df=sample_size - 1,
+    df=n - 1,
     loc=mean_sales,
-    scale=standard_error
+    scale=std_sales / np.sqrt(n)
 )
 
-print("Mean Sales:", mean_sales)
-print("95% Confidence Interval:", confidence_interval)
+st.write("Mean Sales:", mean_sales)
+st.write("95% Confidence Interval:", ci)
+
+# One Sample T-Test
 
 t_stat, p_value = ttest_1samp(df["Weekly_Sales"], 16000)
 
-print("T Statistic:", t_stat)
-print("P Value:", p_value)
+st.write("T Statistic:", t_stat)
+st.write("P Value:", p_value)
 
-type_encoder = LabelEncoder()
-month_encoder = LabelEncoder()
+# Machine Learning
 
-df["Type"] = type_encoder.fit_transform(df["Type"])
-df["Month"] = month_encoder.fit_transform(df["Month"])
+st.header("Machine Learning Models")
 
-X = df.drop(["Weekly_Sales", "Date"], axis=1)
+# Label Encoding
+
+df["Type"] = LabelEncoder().fit_transform(df["Type"])
+df["Month"] = LabelEncoder().fit_transform(df["Month"])
+
+X = df.drop(columns=["Weekly_Sales", "Date"])
 y = df["Weekly_Sales"]
 
+# Train Test Split
+
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.20,
-    random_state=42
+    X, y, test_size=0.2, random_state=42
 )
 
-linear_model = LinearRegression()
-linear_model.fit(X_train, y_train)
+# Linear Regression
 
-linear_predictions = linear_model.predict(X_test)
+lr = LinearRegression()
+lr.fit(X_train, y_train)
 
-print("\nLinear Regression Results")
-print("MAE :", mean_absolute_error(y_test, linear_predictions))
-print("MSE :", mean_squared_error(y_test, linear_predictions))
-print("RMSE:", np.sqrt(mean_squared_error(y_test, linear_predictions)))
-print("R2 Score:", r2_score(y_test, linear_predictions))
+lr_pred = lr.predict(X_test)
 
-random_forest = RandomForestRegressor(
-    n_estimators=100,
-    random_state=42
-)
+st.subheader("Linear Regression")
 
-random_forest.fit(X_train, y_train)
+st.write("MAE:", mean_absolute_error(y_test, lr_pred))
+st.write("RMSE:", np.sqrt(mean_squared_error(y_test, lr_pred)))
+st.write("R2 Score:", r2_score(y_test, lr_pred))
 
-rf_predictions = random_forest.predict(X_test)
+# Random Forest
 
-print("\nRandom Forest Results")
-print("MAE :", mean_absolute_error(y_test, rf_predictions))
-print("MSE :", mean_squared_error(y_test, rf_predictions))
-print("RMSE:", np.sqrt(mean_squared_error(y_test, rf_predictions)))
-print("R2 Score:", r2_score(y_test, rf_predictions))
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X_train, y_train)
 
-feature_importance = pd.DataFrame({
+rf_pred = rf.predict(X_test)
+
+st.subheader("Random Forest")
+
+st.write("MAE:", mean_absolute_error(y_test, rf_pred))
+st.write("RMSE:", np.sqrt(mean_squared_error(y_test, rf_pred)))
+st.write("R2 Score:", r2_score(y_test, rf_pred))
+
+# Feature Importance
+
+importance = pd.DataFrame({
     "Feature": X.columns,
-    "Importance": random_forest.feature_importances_
-}).sort_values(by="Importance", ascending=False)
+    "Importance": rf.feature_importances_
+}).sort_values("Importance", ascending=False)
 
-print(feature_importance)
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.barh(importance["Feature"], importance["Importance"])
+ax.invert_yaxis()
+ax.set_title("Feature Importance")
+st.pyplot(fig)
 
-plt.figure(figsize=(10, 6))
-plt.barh(
-    feature_importance["Feature"],
-    feature_importance["Importance"]
-)
-plt.gca().invert_yaxis()
-plt.xlabel("Importance")
-plt.ylabel("Feature")
-plt.title("Feature Importance")
-plt.show()
+# Actual vs Predicted Sales
 
-plt.figure(figsize=(8, 6))
-plt.scatter(y_test, rf_predictions)
-plt.xlabel("Actual Sales")
-plt.ylabel("Predicted Sales")
-plt.title("Actual vs Predicted Sales")
-plt.show()
+st.subheader("Actual vs Predicted Sales")
 
-comparison = pd.DataFrame({
-    "Actual Sales": y_test,
-    "Predicted Sales": rf_predictions
-})
+fig, ax = plt.subplots(figsize=(8, 6))
+ax.scatter(y_test, rf_pred)
+ax.set_xlabel("Actual Sales")
+ax.set_ylabel("Predicted Sales")
+ax.set_title("Actual vs Predicted")
+st.pyplot(fig)
 
-print(comparison.head(10))
+# Save Final Dataset
 
-df["Predicted_Sales"] = random_forest.predict(X)
-
-df["Month"] = month_encoder.inverse_transform(df["Month"])
-df["Type"] = type_encoder.inverse_transform(df["Type"])
-
+df["Predicted_Sales"] = rf.predict(X)
 df.to_csv("Walmart_Final_RF.csv", index=False)
 
-print("Final dataset saved successfully")
+st.success("Final Dataset Saved Successfully!")

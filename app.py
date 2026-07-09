@@ -117,22 +117,6 @@ t_stat, p_value = ttest_1samp(df["Weekly_Sales"], 16000)
 print("T Statistic:", t_stat)
 print("P Value:", p_value)
 
-engine = create_engine(
-    "mysql+pymysql://root:Samba%40123@localhost/walmart"
-)
-
-with engine.connect():
-    print("Connected Successfully")
-
-df.to_sql(
-    "walmart",
-    con=engine,
-    if_exists="replace",
-    index=False
-)
-
-print("Data Imported Successfully")
-
 type_encoder = LabelEncoder()
 month_encoder = LabelEncoder()
 

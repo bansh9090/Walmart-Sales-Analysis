@@ -105,31 +105,50 @@ st.pyplot(fig)
 
 # Statistical Analysis
 
+# Statistical Analysis
+
 st.header("Statistical Analysis")
 
-# Confidence Interval
-
 mean_sales = df["Weekly_Sales"].mean()
-std_sales = df["Weekly_Sales"].std(ddof=1)
-n = len(df)
 
 ci = stats.t.interval(
     0.95,
-    df=n - 1,
+    len(df)-1,
     loc=mean_sales,
-    scale=std_sales / np.sqrt(n)
+    scale=df["Weekly_Sales"].std()/np.sqrt(len(df))
 )
+t_stat, p_value = ttest_1samp(
+    df["Weekly_Sales"],
+    16000
+)
+col1, col2 = st.columns(2)
 
-st.write("Mean Sales:", mean_sales)
-st.write("95% Confidence Interval:", ci)
-
-# One Sample T-Test
-
-t_stat, p_value = ttest_1samp(df["Weekly_Sales"], 16000)
-
-st.write("T Statistic:", t_stat)
-st.write("P Value:", p_value)
-
+with col1:
+    st.metric(
+        "Average Weekly Sales",
+        f"${mean_sales:,.2f}"
+    )
+with col2:
+    st.metric(
+        "P Value",
+        round(p_value,4)
+    )
+st.write(
+    "95% Confidence Interval:",
+    f"({ci[0]:,.2f}, {ci[1]:,.2f})"
+)
+st.write(
+    "T Statistic:",
+    round(t_stat,4)
+)
+if p_value > 0.05:
+    st.info(
+        "No significant difference found from the target sales value of 16000."
+    )
+else:
+    st.success(
+        "Significant difference found."
+    )
 # Machine Learning
 
 st.header("Machine Learning Models")
